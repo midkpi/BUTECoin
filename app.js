@@ -15,6 +15,7 @@ request.onupgradeneeded = (event) => {
 request.onsuccess = (event) => {
     db = event.target.result;
     checkAuth();
+    updateScoreFromDB(); // Загружаем счет из базы данных
 };
 
 request.onerror = (event) => {
@@ -106,7 +107,7 @@ function showClickerScreen() {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("register-screen").style.display = "none";
     document.getElementById("clicker-screen").style.display = "block";
-    updateScore();
+    updateScoreFromDB(); // Обновляем счет при показе экрана кликера
 }
 
 // Обработчики событий
@@ -137,6 +138,7 @@ let score = 0;
 document.getElementById("coin").addEventListener("click", () => {
     score++;
     document.getElementById("score").textContent = `Счет: ${score}`;
+
     // Сохраняем счет в базе данных
     if (currentUser) {
         const transaction = db.transaction([STORE_NAME], "readwrite");
@@ -145,9 +147,13 @@ document.getElementById("coin").addEventListener("click", () => {
     }
 });
 
-function updateScore() {
+function updateScoreFromDB() {
     if (currentUser) {
-        score = currentUser.score || 0;
-        document.getElementById("score").textContent = `Счет: ${score}`;
+        getUser(currentUser.username, (user) => {
+            if (user) {
+                score = user.score || 0;
+                document.getElementById("score").textContent = `Счет: ${score}`;
+            }
+        });
     }
 }
