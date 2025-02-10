@@ -13,6 +13,20 @@ body {
     text-align: center;
 }
 
+.auth-screen input {
+    display: block;
+    margin: 10px auto;
+    padding: 10px;
+    font-size: 1rem;
+}
+
+.auth-screen button {
+    margin: 5px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
 .coin {
     cursor: pointer;
     user-select: none;
@@ -28,4 +42,10 @@ body {
     margin-top: 20px;
     font-size: 2rem;
     color: #333;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
 }

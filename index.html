@@ -7,26 +7,41 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="main-screen">
+        <h1>Добро пожаловать!</h1>
+        <button id="login-btn">Войти</button>
+        <button id="register-btn">Зарегистрироваться</button>
+    </div>
+
+    <!-- Страница входа -->
+    <div class="container auth-screen" id="login-screen" style="display: none;">
+        <h2>Вход</h2>
+        <input type="text" id="login-username" placeholder="Логин">
+        <input type="password" id="login-password" placeholder="Пароль">
+        <button id="login-submit-btn">Войти</button>
+        <button id="back-to-main-from-login">Назад</button>
+        <p id="login-error" style="color: red; display: none;">Неверный логин или пароль!</p>
+    </div>
+
+    <!-- Страница регистрации -->
+    <div class="container auth-screen" id="register-screen" style="display: none;">
+        <h2>Регистрация</h2>
+        <input type="text" id="register-username" placeholder="Логин">
+        <input type="password" id="register-password" placeholder="Пароль">
+        <button id="register-submit-btn">Зарегистрироваться</button>
+        <button id="back-to-main-from-register">Назад</button>
+        <p id="register-error" style="color: red; display: none;">Логин уже занят!</p>
+    </div>
+
+    <!-- Главный экран кликера -->
+    <div class="container" id="clicker-screen" style="display: none;">
         <div class="coin" id="coin">
             <span class="coin-text">💰</span>
         </div>
-        <div class="score" id="score">Баланс: 0</div>
+        <div class="score" id="score">Счет: 0</div>
+        <button id="logout-btn">Выйти</button>
     </div>
 
-    <script>
-        let score = 0;
-        const coin = document.getElementById('coin');
-        const scoreDisplay = document.getElementById('score');
-
-        coin.addEventListener('click', () => {
-            score++;
-            scoreDisplay.textContent = `Счет: ${score}`;
-            coin.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                coin.style.transform = 'scale(1)';
-            }, 100);
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
