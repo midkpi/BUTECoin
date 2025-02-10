@@ -35,11 +35,20 @@
 
     <!-- Главный экран кликера -->
     <div class="container" id="clicker-screen" style="display: none;">
-        <div class="coin" id="coin">
-            <span class="coin-text">💰</span>
+        <div class="clicker-section">
+            <div class="coin" id="coin">
+                <span class="coin-text">💰</span>
+                <div class="click-value" id="click-value">+1</div>
+            </div>
+            <div class="score" id="score">Счет: 0</div>
+            <button id="logout-btn">Выйти</button>
         </div>
-        <div class="score" id="score">Счет: 0</div>
-        <button id="logout-btn">Выйти</button>
+
+        <!-- Магазин улучшений -->
+        <div class="shop-section">
+            <h2>Магазин</h2>
+            <div id="upgrades-list"></div>
+        </div>
     </div>
 
     <script src="app.js"></script>

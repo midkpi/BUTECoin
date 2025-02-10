@@ -15,7 +15,7 @@ request.onupgradeneeded = (event) => {
 request.onsuccess = (event) => {
     db = event.target.result;
     checkAuth();
-    updateScoreFromDB(); // Загружаем счет из базы данных
+    updateScoreFromDB();
 };
 
 request.onerror = (event) => {
@@ -26,7 +26,7 @@ request.onerror = (event) => {
 function addUser(username, password) {
     const transaction = db.transaction([STORE_NAME], "readwrite");
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.add({ username, password, score: 0 });
+    const request = store.add({ username, password, score: 0, upgrades: [] });
 
     request.onsuccess = () => {
         console.log("Пользователь зарегистрирован:", username);
@@ -49,6 +49,12 @@ function getUser(username, callback) {
     request.onerror = (event) => {
         console.error("Ошибка при получении пользователя:", event.target.error);
     };
+}
+
+function updateUser(user) {
+    const transaction = db.transaction([STORE_NAME], "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    store.put(user);
 }
 
 // Логика авторизации
@@ -107,7 +113,8 @@ function showClickerScreen() {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("register-screen").style.display = "none";
     document.getElementById("clicker-screen").style.display = "block";
-    updateScoreFromDB(); // Обновляем счет при показе экрана кликера
+    updateScoreFromDB();
+    renderUpgrades();
 }
 
 // Обработчики событий
@@ -134,25 +141,100 @@ document.getElementById("logout-btn").addEventListener("click", logout);
 
 // Логика кликера
 let score = 0;
+let clickValue = 1; // Количество очков за клик
 
 document.getElementById("coin").addEventListener("click", () => {
-    score++;
-    document.getElementById("score").textContent = `Счет: ${score}`;
-
-    // Сохраняем счет в базе данных
-    if (currentUser) {
-        const transaction = db.transaction([STORE_NAME], "readwrite");
-        const store = transaction.objectStore(STORE_NAME);
-        store.put({ ...currentUser, score });
-    }
+    score += clickValue;
+    updateScoreDisplay();
+    saveScore();
 });
+
+function updateClickValueDisplay() {
+    document.getElementById("click-value").textContent = `+${formatNumber(clickValue)}`;
+}
+
+function updateScoreDisplay() {
+    document.getElementById("score").textContent = `Счет: ${formatNumber(score)}`;
+}
+
+function saveScore() {
+    if (currentUser) {
+        currentUser.score = score;
+        updateUser(currentUser);
+    }
+}
 
 function updateScoreFromDB() {
     if (currentUser) {
         getUser(currentUser.username, (user) => {
             if (user) {
                 score = user.score || 0;
-                document.getElementById("score").textContent = `Счет: ${score}`;
+                clickValue = user.clickValue || 1;
+                updateScoreDisplay();
+            }
+        });
+    }
+}
+
+// Форматирование чисел
+function formatNumber(number) {
+    if (number >= 1e9) return (number / 1e9).toFixed(1) + "KKK";
+    if (number >= 1e6) return (number / 1e6).toFixed(1) + "KK";
+    if (number >= 1e3) return (number / 1e3).toFixed(1) + "K";
+    return number;
+}
+
+// Магазин улучшений
+const upgrades = [
+    { id: 1, name: "Улучшение клика +1", cost: 100, value: 1 },
+    { id: 2, name: "Улучшение клика +5", cost: 500, value: 5 },
+    { id: 3, name: "Улучшение клика +10", cost: 1000, value: 10 },
+    { id: 4, name: "Улучшение клика +100", cost: 10000, value: 100 },
+    { id: 5, name: "Улучшение клика +1K", cost: 100000, value: 1000 },
+    { id: 6, name: "Улучшение клика +10K", cost: 1000000, value: 10000 },
+];
+
+function renderUpgrades() {
+    const upgradesList = document.getElementById("upgrades-list");
+    upgradesList.innerHTML = "";
+
+    upgrades.forEach(upgrade => {
+        const upgradeElement = document.createElement("div");
+        upgradeElement.className = "upgrade";
+        upgradeElement.innerHTML = `
+            <span>${upgrade.name} (Цена: ${formatNumber(upgrade.cost)})</span>
+            <button onclick="buyUpgrade(${upgrade.id})">Купить</button>
+        `;
+        upgradesList.appendChild(upgradeElement);
+    });
+}
+
+function buyUpgrade(upgradeId) {
+    const upgrade = upgrades.find(u => u.id === upgradeId);
+    if (score >= upgrade.cost) {
+        score -= upgrade.cost;
+        clickValue += upgrade.value;
+        updateScoreDisplay();
+        updateClickValueDisplay(); // Обновляем отображение
+        saveScore();
+        if (currentUser) {
+            currentUser.clickValue = clickValue;
+            updateUser(currentUser);
+        }
+        renderUpgrades();
+    } else {
+        alert("Недостаточно средств!");
+    }
+}
+
+function updateScoreFromDB() {
+    if (currentUser) {
+        getUser(currentUser.username, (user) => {
+            if (user) {
+                score = user.score || 0;
+                clickValue = user.clickValue || 1;
+                updateScoreDisplay();
+                updateClickValueDisplay(); // Обновляем отображение при загрузке
             }
         });
     }

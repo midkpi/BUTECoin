@@ -28,10 +28,21 @@ body {
 }
 
 .coin {
+    position: relative;
     cursor: pointer;
     user-select: none;
     font-size: 10rem;
     transition: transform 0.1s;
+}
+
+.click-value {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    color: green;
+    font-weight: bold;
 }
 
 .coin-text {
@@ -48,4 +59,27 @@ button {
     padding: 10px 20px;
     font-size: 1rem;
     cursor: pointer;
+}
+
+.clicker-section {
+    display: inline-block;
+    margin-right: 50px;
+}
+
+.shop-section {
+    display: inline-block;
+    vertical-align: top;
+    text-align: left;
+}
+
+.upgrade {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.upgrade button {
+    margin-left: 10px;
 }
