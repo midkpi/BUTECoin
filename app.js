@@ -1,89 +1,87 @@
-// Инициализация IndexedDB
 let db;
-const DB_NAME = "ClickerDB";
-const STORE_NAME = "users";
-
-const request = indexedDB.open(DB_NAME, 1);
-
-request.onupgradeneeded = (event) => {
-    db = event.target.result;
-    if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: "username" });
-    }
-};
-
-request.onsuccess = (event) => {
-    db = event.target.result;
-    checkAuth();
-    updateScoreFromDB();
-};
-
-request.onerror = (event) => {
-    console.error("Ошибка при открытии базы данных:", event.target.error);
-};
-
-// Функции для работы с базой данных
-function addUser(username, password) {
-    const transaction = db.transaction([STORE_NAME], "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.add({ username, password, score: 0, upgrades: [] });
-
-    request.onsuccess = () => {
-        console.log("Пользователь зарегистрирован:", username);
-    };
-
-    request.onerror = (event) => {
-        console.error("Ошибка при регистрации:", event.target.error);
-    };
-}
-
-function getUser(username, callback) {
-    const transaction = db.transaction([STORE_NAME], "readonly");
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(username);
-
-    request.onsuccess = () => {
-        callback(request.result);
-    };
-
-    request.onerror = (event) => {
-        console.error("Ошибка при получении пользователя:", event.target.error);
-    };
-}
-
-function updateUser(user) {
-    const transaction = db.transaction([STORE_NAME], "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
-    store.put(user);
-}
-
-// Логика авторизации
 let currentUser = null;
+let score = 0;
+let clickValue = 1;
 
-function checkAuth() {
-    const savedUser = localStorage.getItem("currentUser");
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showClickerScreen();
+// Инициализация SQL.js
+async function initSQLite() {
+    const SQL = await initSqlJs({
+        locateFile: (file) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`,
+    });
+
+    // Загрузка базы данных из localStorage
+    let dbData;
+    const savedDB = localStorage.getItem("clickerDB");
+    if (savedDB) {
+        dbData = new Uint8Array(JSON.parse(savedDB));
+    }
+
+    // Создание или загрузка базы данных
+    db = new SQL.Database(dbData);
+
+    // Создание таблицы пользователей, если её нет
+    db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            score INTEGER DEFAULT 0,
+            clickValue INTEGER DEFAULT 1
+        )
+    `);
+
+    console.log("База данных инициализирована.");
+}
+
+// Сохранение базы данных в localStorage
+function saveDB() {
+    const data = db.export();
+    localStorage.setItem("clickerDB", JSON.stringify(Array.from(data)));
+}
+
+// Регистрация
+function register(username, password) {
+    try {
+        db.run("INSERT INTO users (username, password) VALUES (?, ?)", [username, password]);
+        saveDB();
+        return true;
+    } catch (err) {
+        console.error("Ошибка при регистрации:", err.message);
+        return false;
     }
 }
 
+// Вход
 function login(username, password) {
-    getUser(username, (user) => {
-        if (user && user.password === password) {
-            currentUser = user;
-            localStorage.setItem("currentUser", JSON.stringify(user));
-            showClickerScreen();
-        } else {
-            document.getElementById("login-error").style.display = "block";
-        }
-    });
+    const result = db.exec("SELECT * FROM users WHERE username = ? AND password = ?", [username, password]);
+    if (result.length > 0) {
+        return result[0].values[0]; // Возвращаем первого пользователя
+    }
+    return null;
 }
 
-function logout() {
-    currentUser = null;
-    localStorage.removeItem("currentUser");
-    showMainScreen();
+// Обновление счета
+function updateScore(userId, score, clickValue) {
+    db.run("UPDATE users SET score = ?, clickValue = ? WHERE id = ?", [score, clickValue, userId]);
+    saveDB();
+}
+
+// Форматирование чисел
+function formatNumber(number) {
+    if (number >= 1e9) return (number / 1e9).toFixed(1) + " млрд";
+    if (number >= 1e6) return (number / 1e6).toFixed(1) + " млн";
+    if (number >= 1e3) return (number / 1e3).toFixed(1) + " тыс";
+    return number;
+}
+
+// Обновление отображения счета
+function updateScoreDisplay() {
+    document.getElementById("score").textContent = `Счет: ${formatNumber(score)}`;
+}
+
+// Обновление отображения очков за клик
+function updateClickValueDisplay() {
+    document.getElementById("click-value").textContent = `+${formatNumber(clickValue)}`;
 }
 
 // Логика интерфейса
@@ -113,7 +111,8 @@ function showClickerScreen() {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("register-screen").style.display = "none";
     document.getElementById("clicker-screen").style.display = "block";
-    updateScoreFromDB();
+    updateScoreDisplay();
+    updateClickValueDisplay();
     renderUpgrades();
 }
 
@@ -127,71 +126,53 @@ document.getElementById("back-to-main-from-register").addEventListener("click", 
 document.getElementById("login-submit-btn").addEventListener("click", () => {
     const username = document.getElementById("login-username").value;
     const password = document.getElementById("login-password").value;
-    login(username, password);
+    const user = login(username, password);
+    if (user) {
+        currentUser = {
+            id: user[0],
+            username: user[1],
+            password: user[2],
+            score: user[3],
+            clickValue: user[4],
+        };
+        score = currentUser.score;
+        clickValue = currentUser.clickValue;
+        showClickerScreen();
+    } else {
+        document.getElementById("login-error").style.display = "block";
+    }
 });
 
 document.getElementById("register-submit-btn").addEventListener("click", () => {
     const username = document.getElementById("register-username").value;
     const password = document.getElementById("register-password").value;
-    addUser(username, password);
+    const success = register(username, password);
+    if (success) {
+        showMainScreen();
+    } else {
+        document.getElementById("register-error").style.display = "block";
+    }
+});
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+    currentUser = null;
     showMainScreen();
 });
 
-document.getElementById("logout-btn").addEventListener("click", logout);
-
 // Логика кликера
-let score = 0;
-let clickValue = 1; // Количество очков за клик
-
 document.getElementById("coin").addEventListener("click", () => {
     score += clickValue;
     updateScoreDisplay();
-    saveScore();
+    if (currentUser) {
+        updateScore(currentUser.id, score, clickValue);
+    }
 });
-
-function updateClickValueDisplay() {
-    document.getElementById("click-value").textContent = `+${formatNumber(clickValue)}`;
-}
-
-function updateScoreDisplay() {
-    document.getElementById("score").textContent = `Счет: ${formatNumber(score)}`;
-}
-
-function saveScore() {
-    if (currentUser) {
-        currentUser.score = score;
-        updateUser(currentUser);
-    }
-}
-
-function updateScoreFromDB() {
-    if (currentUser) {
-        getUser(currentUser.username, (user) => {
-            if (user) {
-                score = user.score || 0;
-                clickValue = user.clickValue || 1;
-                updateScoreDisplay();
-            }
-        });
-    }
-}
-
-// Форматирование чисел
-function formatNumber(number) {
-    if (number >= 1e9) return (number / 1e9).toFixed(1) + "KKK";
-    if (number >= 1e6) return (number / 1e6).toFixed(1) + "KK";
-    if (number >= 1e3) return (number / 1e3).toFixed(1) + "K";
-    return number;
-}
 
 // Магазин улучшений
 const upgrades = [
-    { id: 1, name: "Улучшение клика +1", cost: 100, value: 1 },
-    { id: 2, name: "Улучшение клика +5", cost: 500, value: 5 },
-    { id: 3, name: "Улучшение клика +10", cost: 1000, value: 10 },
-    { id: 4, name: "Улучшение клика +100", cost: 10000, value: 100 },
-    { id: 5, name: "Улучшение клика +1K", cost: 100000, value: 1000 },
-    { id: 6, name: "Улучшение клика +10K", cost: 1000000, value: 10000 },
+    { id: 1, name: "Улучшение клика +1", cost: 10, value: 1 },
+    { id: 2, name: "Улучшение клика +5", cost: 50, value: 5 },
+    { id: 3, name: "Улучшение клика +10", cost: 100, value: 10 },
 ];
 
 function renderUpgrades() {
@@ -215,11 +196,9 @@ function buyUpgrade(upgradeId) {
         score -= upgrade.cost;
         clickValue += upgrade.value;
         updateScoreDisplay();
-        updateClickValueDisplay(); // Обновляем отображение
-        saveScore();
+        updateClickValueDisplay();
         if (currentUser) {
-            currentUser.clickValue = clickValue;
-            updateUser(currentUser);
+            updateScore(currentUser.id, score, clickValue);
         }
         renderUpgrades();
     } else {
@@ -227,15 +206,30 @@ function buyUpgrade(upgradeId) {
     }
 }
 
-function updateScoreFromDB() {
-    if (currentUser) {
-        getUser(currentUser.username, (user) => {
-            if (user) {
-                score = user.score || 0;
-                clickValue = user.clickValue || 1;
-                updateScoreDisplay();
-                updateClickValueDisplay(); // Обновляем отображение при загрузке
-            }
-        });
+// Проверка авторизации при загрузке страницы
+async function checkAuth() {
+    const savedUser = localStorage.getItem("currentUser");
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        const result = db.exec("SELECT * FROM users WHERE id = ?", [currentUser.id]);
+        if (result.length > 0) {
+            const user = result[0].values[0];
+            currentUser = {
+                id: user[0],
+                username: user[1],
+                password: user[2],
+                score: user[3],
+                clickValue: user[4],
+            };
+            score = currentUser.score;
+            clickValue = currentUser.clickValue;
+            showClickerScreen();
+        }
     }
 }
+
+// Инициализация
+(async () => {
+    await initSQLite();
+    checkAuth();
+})();
