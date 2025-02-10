@@ -1,0 +1,31 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    text-align: center;
+}
+
+.coin {
+    cursor: pointer;
+    user-select: none;
+    font-size: 10rem;
+    transition: transform 0.1s;
+}
+
+.coin-text {
+    display: inline-block;
+}
+
+.score {
+    margin-top: 20px;
+    font-size: 2rem;
+    color: #333;
+}

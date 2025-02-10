@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Минималистичный Кликер</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="coin" id="coin">
+            <span class="coin-text">💰</span>
+        </div>
+        <div class="score" id="score">Счет: 0</div>
+    </div>
+
+    <script>
+        let score = 0;
+        const coin = document.getElementById('coin');
+        const scoreDisplay = document.getElementById('score');
+
+        coin.addEventListener('click', () => {
+            score++;
+            scoreDisplay.textContent = `Счет: ${score}`;
+            coin.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                coin.style.transform = 'scale(1)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
