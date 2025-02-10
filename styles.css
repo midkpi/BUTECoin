@@ -1,12 +1,12 @@
 body {
     margin: 0;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
     background-color: #f0f0f0;
     font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
@@ -27,12 +27,19 @@ body {
     cursor: pointer;
 }
 
+.clicker-section {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    text-align: center;
+}
+
 .coin {
-    position: relative;
     cursor: pointer;
     user-select: none;
     font-size: 10rem;
     transition: transform 0.1s;
+    position: relative;
 }
 
 .click-value {
@@ -45,30 +52,17 @@ body {
     font-weight: bold;
 }
 
-.coin-text {
-    display: inline-block;
-}
-
 .score {
     margin-top: 20px;
     font-size: 2rem;
     color: #333;
 }
 
-button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.clicker-section {
-    display: inline-block;
-    margin-right: 50px;
-}
-
 .shop-section {
-    display: inline-block;
-    vertical-align: top;
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
     text-align: left;
 }
 
@@ -82,4 +76,13 @@ button {
 
 .upgrade button {
     margin-left: 10px;
+}
+
+.logout-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
 }
